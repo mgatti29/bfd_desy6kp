@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: BFD
+Version: 0.1
+Summary: Python module for measuring Bayesian Fourier Domain galaxy moments
+Home-page: https://github.com/gbernstein/bfd
+Download-URL: https://github.com/gbernstein/bfd/releases/tag/v0.1.zip
+Author: Gary Bernstein
+Author-email: garyb@PHYSICS.UPENN.EDU
+License: BSD License

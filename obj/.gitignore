@@ -1,0 +1,2 @@
+# Ignore all the object files that are placed into this directory
+*.o

@@ -1,0 +1,385 @@
+We thank Dr. Zuntz for his very helpful comments.  We have run a
+substantially larger set of pixelized-galaxy tests in order to answer
+some of his questions and reduce uncertainties in the results,
+including a joint determination of the nonlinearity and the bias for
+the GalSim-based test.  There are hence updates to several numerical
+values as well as text updates in response to his comments.  Most of
+the changed text is in red in the draft (though not all).
+
+
+> Major Issues -----------
+> 
+> Section 2.1: Templates
+> 
+> The notion of the templates, which underlies the methods, is not
+> introduced in this section - it's not made clear where the predicted
+> moments come from at all. That makes it seem much more of a leap in
+> the later sections when they are introduced.
+>
+
+The template concept now leads off section 2.1, which has been fully
+rewritten through what is now Eqn. 5.
+
+> Section 2.2: Clarity of introduction
+> 
+> This section is somewhat unclear and needs the introductory part
+> revised to explain more clearly what the probabilities are, and
+> stating clearly what they are "given" in each case, what G means, what
+> the goal of the calculation is, and ideally include a small diagram of
+> the setup (showing x_G versus x_0, etc.). You might also benefit from
+> un-suppressing things that are suppressed in a few places (the fact
+> you're working in Fourier space makes how the x_0 come in a lot less
+> clear). The reason for the Jacobian coming in could also be more
+> clearly explained (or generally equation 24 explain/derived more
+> clearly).
+>
+
+Changes to the text and formulae in this section and 2.1 to carry x0 further
+through do, we hope, clarify where it matters.  The dependences of
+variables and probabilities are more explicitly included throughout the
+full paper (these changes are generally not marked in red).
+
+> Section 2.3: Meaning of p_G
+> 
+> It never becomes clear exactly what p_G means from here onwards. It's
+> initially unclear whether it's a prior or a posterior, but it appears
+> from eq 35 that it's closer to a prior, since the L(M) term gives you
+> the likelihood part. The way you assign p_G to different templates
+> (are they all uniform? Could they depend on colour?) also never
+> becomes clearer.
+
+Now states explicity at the outset that this is a prior probability.
+
+> 
+> Section 2.3: Weights
+> 
+> The choice of weight function is never really discussed, with only a
+> brief mention that you expect W \sim T^2 I. You should add some more
+> discussion about what a good weight is, but in particular it's
+> surprising that you would use a constant weight everywhere - that
+> seems akin to smoothing down your entire data set to the resolution of
+> the worst part - this is the kind of thing that one normally has to
+> yell at astronomers to stop them doing! Does it not lose lots and lots
+> of information in realistic cases?
+
+Some explanation of this issue is in added in Section 2.1, just after
+the weight is introduced.
+
+> 
+> Section 2.5: Sanity of adding noise
+> 
+> You already question that sanity of adding noise to bright galaxies to
+> make them closer to more templates. It seems like there are two
+> possibilities here: either you are dealing with regularly shaped
+> galaxies, in which you could simulate artificial templates in whatever
+> abundance you like, or you are dealing with irregularly shaped objects
+> (I don't necessarily mean just the usual meaning of "irregular galaxy"
+> here, but rather anything that doesn't fit the pattern of having
+> similar shapes to the bulk of the objects) in which case would one
+> really expect it to live in the same part of moment space as the bulk
+> of the dim galaxies?
+> 
+> This may in fact be a more general objection than just to this part:
+> wouldn't BFD fail rather badly on irregulars which don't live in the
+> same region of moment space as the bulk of objects and (unlike with
+> model-fitting methods) how would you tell a fit was bad?
+>
+
+A couple of comments here: first, our compression into moments leaves
+little room for "irregularity" of galaxies.  Once the flux is
+specified and we produce rotated copies of all galaxies, there are
+really only two degrees of freedom (size and ellipticity) that
+determine the density of templates in the neighborhood of a given
+galaxy in the 4d moment space.  So the distinction between "regularly
+shaped" and other galaxies is not really relevant; it's just a matter
+of how common galaxies of a given flux/size/e are.
+
+Second, the main reason to avoid artificial templates is that we need
+to know how common a given moment vector is in the
+population, i.e. the prior on M. Sampling from the sky tells us this
+empirically; we'd need to do some kind of kernel-based (or other)
+interpolation in order to sample our artificial templates properly.
+At that point, it's not clear what the advantage of such a kernel
+would be over using the measurement noise as our smoothing kernel.
+
+Finally, we never make the assumption that bright galaxies resemble
+the dim ones.  We only add noise to the bright ones, hopefully
+sufficient that they now resemble (within noise) a sufficient number
+of other bright galaxies, not the dim ones.
+
+
+> 
+> Section 4: Real galaxies
+> 
+> Nowhere in your validation do you use the GalSim RealGalaxy class,
+> which can be a more useful test than the simulated galaxies. Is there
+> a reason this is impossible or particularly hard? (Not enough
+> templates?) If not you should try it.
+>
+
+As you suggest, we were worried that there are not enough templates,
+and that in any case we would be no longer be testing the
+approximation that the template set is only a finite sampling of the
+continuous distribution of galaxy properties, because the target
+sample would be drawn from the same finite set as the templates.  We
+thought our tests were in this way more realistic than RealGalaxy.
+
+> 
+> Section 5.7: Number of templates you used.
+> 
+> In section 5.7 you derive the number of templates needed to avoid a
+> bias, and then find that it is more than the number used in the GalSim
+> tests. You speculate that this is the cause of some of the residual
+> bias seen in those tests. You need to re-run those tests with the
+> 4*10^4 template galaxies that you need and establish whether this is
+> the case or not. I know this is tedious. Sorry.
+
+We have repeated the tests with 25,000 templates instead of 10,000
+(going to 40,000 complicates some memory issues on our cluster).  The
+value of m stayed the same within errors. All
+results in the paper (abstract, sections 4 & 5, and conclusions) now
+report newer values with less uncertainty.  If
+finite-template-bias were responsible, the 
+bias should have gone down 2.5x, for which we do not have evidence.
+We have therefore removed speculation about this kind of bias being
+present in our current result.
+
+     
+> You also need to report how the number of templates used per galaxy
+> actually ends up coming out for your simulations so we can
+> compare. I guess this is a function of SNR?
+>
+
+The number of templates used per galaxy is now reported in Figure 4,
+with some accompanying text in section 5.7.
+
+> Section 6: Fun with photo-z
+> 
+> These subsections are all v interesting, especially the photo-z
+> one. There seems to be one major issue with it if I understand
+> correctly, though. Your suggestion extends the (g1,g2) vector to
+> include estimates for all the different bins. This is great for
+> measuring the shear tomographically. 
+> 
+> But when we come to predict the theory shear spectrum for each
+> tomographic bin we need an n(z) distribution to pass into it - without
+> this the observation cannot be used for parameter estimation. It looks
+> like this information is lost under this approach because you just
+> estimate the shear in the different bins not the number of objects in
+> each or their individual p(z).
+> 
+>
+
+You are correct in that the binning would need to be narrow enough
+that the lensing does not vary significantly across the bin.  This is
+now noted in the text. But aside from the issue of the resolution of
+the bins, one would *not* need to calculate an n(z) for the members of
+a bin.  The probability function P(moments | g) marginalizes over the
+true redshift of each individual source and gives a joint constraint
+on the vector of g values at all z's.
+
+The inference of tomographic shear power spectra from this kind of
+data would be different from the way we're used to things now, and
+certainly requires more thought than is in this paper.  Followups on
+this are in the works.
+
+> Minor Issues ------------
+> 
+> Section 1
+> 
+> - You should briefly say here when you mention the Great3 simulations
+>   (or maybe later) why the default ones weren't suitable for you (was
+>   the deep sample not what you needed?) and you had to make your own
+>   G3-like sims.
+>
+
+A footnote has been added to explain why we do not use Great3.
+
+> - " ... model-independent means ..." The Great3 paper showed that
+>   it's not just model fitting methods that suffer from model bias -
+>   other methods performed differently on the RealGalaxy versus Control
+>   branches too. The assumptions are just implicit. Incidentally you
+>   have a "model" as well, but it is that "each shallowly measured
+>   galaxy is the same shape as some deeply measured galaxy".
+>
+
+See new text to this effect at the end of the paragraph that begins
+with "BA14" on page 4.
+
+> - "noise bias" - This arises not because the ML estimator is a
+>   non-linear function of the data, but because the model is a
+>   non-linear function of the parameters (or more generally because the
+>   likelihood is asymmetric in the parameters of interest).
+>
+
+The text now says the ML parameters "respond asymmetrically to noise,"
+which I think encompasses your conditions.
+
+> - sFIT needs an explanation or reference.
+>
+
+We inserted a reference to the GREAT3 paper as we are not aware of any
+other publication describing this method yet. 
+
+> 
+> Section 2
+> 
+> - You definitely don't get to called a method Bayesian and then say
+>   you're ignoring the prior. You need to mention a little about the
+>   right way to construct a prior here. Also in the case where you're
+>   measuring the shear in a small area (pixel-sized, so you can do 2pt
+>   measures later) is the likelihood still dominant?
+> 
+
+We added text noting that we are considering the case of constant,
+well-measured shear in this paper, for which uniform prior is
+sufficient. 
+
+> - You start slightly abusing notation here, using L(D) to mean the
+>   distribution (usually Gaussian) of just the noise part, instead of
+>   the P(D|G)=L(D) as it really is.
+>
+
+We hope the text is clearer now in specifying that L is always the
+probability distribution of the measurement noise (on either D or M).
+
+> - The Taylor expansion you do to go from equation 12 to 13 requires
+>   that g*Q/P is small, i.e. that g * d log(P)/dP is small. Does this
+>   always follow from g being small?
+>
+
+As long as d(log P)/dg is finite, there is always a sufficiently small
+g that the Taylor expansion is valid.  The question is whether the
+typical cosmic-shear value of g~0.02 is sufficiently small, and we
+investigate this in section 5.5.  We have added some text to that
+section noting the circumstances in which d(log P)/dg is not small.
+And in re-running our simulations to answer some other questions, we
+have more carefully investigated the effect of nonlinearity on our g
+inferences from the pixelized-galaxy tests.  There are changes
+throughout the paper to reflect the results of a fit of these
+results to a model of m + nonlinearity.
+
+> Section 2.2
+> 
+> - You use "s" to mean two slightly different things here (e.g. eq 25)
+>   - the fact of selection itself, a binary random variable, and the
+>   part of moment space, a range in f, where that selection is
+>   made. This is not critical but would be nice to change.
+>
+
+Using uppercase S for the region in moment space now.
+
+> - You never use the f_max here. Is there an f_max? Why?
+>
+
+f_max is used in practice to set an upper brightness limit to the
+galaxies used in the lensing analysis, since the brightest galaxies
+are (a) typically too nearby to be much use as source galaxies, (b)
+often large and tough for SExtractor etc to treat properly, and (c)
+well-resolved, violating our convexity condition, and (d) require very
+much added noise to avoid the sparse-template problem.  So we keep the
+upper limit here as well as the lower limit.  Also in the case where
+we add noise, there is an f_max for the galaxies to which we have
+*not* added noise (see Appendix A).
+
+
+> Section 2.3
+> 
+> The claim that P(s) does not depend on the data in the stamp here is
+> confusing and surprising - how could the chance of detection not
+> depend on, e.g. how bright the galaxy is? And the M^G term appears
+> throughout eq 37. Could this be clarified?
+>
+
+See the edit here.  P(s) is marginalized over all possible source
+galaxies and all possible *detected* moments, leaving no dependence on
+the moment data as long as it is selected.  The M^G appear in what is
+now eqn 41 because these are the template moments, not the observed
+data, and we are marginalizing over possible appearances of the
+detected galaxy.
+
+> 
+> Section 3.1
+> 
+> - You rotate all your objects to have M in the + direction. Since we
+>   are working with a square box the symmetry between the x and +
+>   directions is slightly broken - probably this has no effect but is
+>   it definitely safe to do this?
+
+Throughout the paper we assume that the underlying population is
+rotationally symmetric, which includes assuming that truncation of the
+images by a (square) image boundary has negligible effect on the
+inferred moments.  We have done some tests that our results do not
+change when we alter the postage-stamp size, but felt the paper
+already had enough details and didn't want to include edge effects
+too.
+
+> 
+> - The sigma_step \lesssim 1 value seems large between grid points -
+>   one would normally want to map out probabilities with resolution
+>   quite a bit smaller than 1 sigma. Is the general rule off here
+>   because you are averaging over many templates anyway?
+> 
+
+We believe your supposition is correct.  There is no need for very
+high accuracy on the integral for every template.
+
+> - You need a different tree for every value of C_M. In real data
+>   there can be quite a dynamic range of this. Will this approach
+>   hold up for real data?
+>
+
+We only need a new tree when C_M changes by enough to make the old
+tree an inefficient means of culling the templates to the set of
+objects with \chi^2 < \sigma_max under the new C_M.  So in
+practice we'd need to pre-segregate the targets into groups that have
+C_M within ~10% of each other.  This might be annoying but we would
+not expect it to be prohibitive, since tree generation is fast
+compared to the calculation of PQR's.  There is some text to this
+effect in 3.2.
+
+> 
+> Section 5
+> 
+> - You make a bold claim here that you could overcome the problem with
+>   larger shears by de-shearing and then measuring the object. It
+>   should be made more clear here that this is rather speculative.
+>
+
+An appropriate phrase has been added.
+
+> - It also looks like even at shear ~ 0.04, which shouldn't be too
+>   uncommon, there is a bias found. Is this a problem?
+>
+
+There is new text in this section indicating that a nonlinearity
+correction might be needed for cosmic-shear tests.
+
+> 
+> Section 7
+> 
+> You mention the Schneider et al approach and suggest that BFD could
+> eliminate model bias. In this context your template sparsity is
+> directly equivalent to everyone else's model bias, so you should be
+> slightly careful of that claim.
+>
+
+See a corrected statement which uses your language that our "model" is
+that the targets each match a template.
+
+> 
+> Typos etc.  ----------
+> 
+> Section 2.3
+> 
+> P(s) is the detection probability, not P(~s) as you say at one point
+> here.
+> 
+> Section 5.6
+> 
+> "This is below the typical shear imparted ..." This is slightly
+> confused wording - 0.04 is above the typical shear, rather than below,
+> hence the point.
+>
+
+Fixed

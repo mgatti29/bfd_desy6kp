@@ -1,0 +1,113 @@
+This repo has two independent sets of code: Python and C++.  They do not call each other and can be built
+independently.
+
+Apologies in advance for the amateurish setup here.
+
+----------------------------
+
+PYTHON
+
+The loadable python modules are configured as a package "bfd" that can be installed with the usual
+python ./setup.py install
+Codes for this are in the bfd subdirectory.
+
+The command-line-callable executables are in the src/ subdirectory.  If you do
+
+make python
+
+then the setup script will be run and copies of the callable python programs will be placed into
+the bin/ subdirectory.
+
+make all
+make
+
+will do the python build and the C++ build described below.
+
+----------------------------
+
+C++
+
+The C++ setup is substantially more complex and not yet fully functional outside my environment.
+
+PREQUISITES:
+The following packages are prerequisites:
+
+fftw
+eigen
+Intel Math Kernel Library (MKL), optional for use with Eigen.
+cfitsio
+yaml-cpp
+gbutil
+gbfits
+
+These are all public packages, except *gbutil* and *gbfits* are other of my
+repositories.
+
+[When the bfd C++ pixel-oriented functions are re-activated, there
+will be an additional dependence on my *sbprofile* repository.]
+
+ENVIRONMENT:
+
+For building, the following environment variables must be defined:
+
+CXX:  path to and appropriate flags for C++-11-compliant C++
+compiler.
+CXXFLAGS: Flags for C++ compilation and linkage.  Flags to enable OpenMP
+processing should be set if you want the code to make use of this.
+FFTW_DIR:  path to root of fftw installation.  Should have /include and
+/lib subdirs (likewise for all of below)
+EIGEN_DIR:  path to parent directory of the Eigen inclusion tree
+CFITSIO_DIR: path to root of cfitsion installation
+YAML_DIR: path to root of yaml-cpp installation
+GBUTIL_DIR: path to root of gbutil installation
+GBFITS_DIR: path to root of gbfits installation
+MKL_DIR: path to root of the MKL installation, if it is to be used for Eigen.
+MKL_OPTS, MKL_LINK: compiling/linking instructions for MKL, if it's in use.
+
+At runtime, the LD_LIBRARY_PATH must be set to access the lib files of
+all the packages that have libraries (FFTW, TMV, CFITSIO, YAML, MKL).
+
+Eigen will use MKL routines if MKL_DIR is defined. 
+
+BUILD:
+
+The Makefile should build all codes and anything that needs to be done
+in the gbtools (and sbprofile) dependency packages.  The basic command
+
+make cpp
+
+will compile all of the subroutines/classes (in src/subs/) and all of
+the executable codes (in src/), first placing object files into obj/
+and then link the executables placed in the bin/ subdirectory.  Put
+the bin/ subdir into your path (or copy to someplace in your path).
+If you want to build only one executable, be sure to prepend its name
+with bin/, as in
+
+make bin/gaussTest6m
+
+If you run
+
+make all
+ -or-
+make
+
+then the cpp and python builds will both be done.
+
+make local-clean
+
+will remove object and executable codes and other junk from this
+repository.
+
+make clean
+
+will also make clean in the dependency packages gbtools and sbprofile.
+
+TESTS:
+
+make tests
+
+will compile the executable testing routines that are in the tests/
+subdirectory and place them into testbin/ (along with copies of any python
+test programs).  It's then up to you to run them.  There is not yet
+any systematic way of running and evaluating all tests.
+

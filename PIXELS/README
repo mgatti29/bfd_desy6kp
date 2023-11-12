@@ -1,0 +1,1 @@
+This directory holds code for C++ measurements of galaxy moments from pixels (images).  All such routines and associated tests need to be reworked after the revamping of C++ bfd codes in Jan 2017.

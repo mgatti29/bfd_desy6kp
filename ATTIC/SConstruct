@@ -1,0 +1,82 @@
+import glob
+
+gbtools_dir='../gbtools/'
+sbprofile_dir='../sbprofile/'
+#tmv_dir='/data2/home/rarmst/soft/tmv0.71_icpc/'
+tmv_dir='/usr/global/tmv/'
+fitsio_dir='/usr/global/cfitsio/'
+fftw_dir='/usr/global/fftw/'
+boost_dir='/data2/home/rarmst/soft/boost_1_48_0/'
+libs=['cfitsio','fftw3','boost_regex','tmv_symband',
+      'boost_timer','boost_chrono','boost_system','boost_program_options','profiler']
+
+
+gbutil_files=Split('BinomFact.cpp StringStuff.cpp Interpolant.cpp fft.cpp Table.cpp Shear.cpp Expressions.cpp')
+sbprofile_files=Glob(sbprofile_dir+'*cpp')
+gbimage_files=Split(' FITS.o Header.o Hdu.o FitsTable.o FTable.o FTableExpression.o Image.o FitsImage.o ')
+sbprofile_files=Split('SBProfile.cpp SBPixel.cpp')
+flags='-openmp -g -wd279 -O3 -DFLOAT -msse3 -DSSE'
+#flags='-fopenmp -g -O3'
+
+# add lib/inc directories to these
+external=[tmv_dir,fitsio_dir,fftw_dir]
+
+# add path names for util files
+gbutil_files=[gbtools_dir+'utilities/'+f for f in gbutil_files]
+gbimage_files=[gbtools_dir+'images/'+f for f in gbimage_files]
+sbprofile_files=[sbprofile_dir+f for f in sbprofile_files]
+
+inc_path=['.']
+# This is to be able to use the intel files
+lib_path=['/opt/intel/composerxe-2011.4.191/mkl/lib/intel64/','/data2/home/rarmst/soft/lib/libprofile/']
+for dir in external:
+    incdir=dir+'include/'
+    libdir=dir+'lib/'
+    inc_path.append(incdir)
+    lib_path.append(libdir)
+
+# Add boost path because my installation is weird
+inc_path.append(boost_dir)
+lib_path.append(boost_dir+'stage/lib')
+
+inc_path.append(gbtools_dir+'utilities/')
+inc_path.append(gbtools_dir+'images/')
+inc_path.append(sbprofile_dir)
+
+env=Environment()
+env['CXX']='/opt/intel/composerxe-2011.4.191/bin/intel64/icpc'
+#env['CXX']='g++'
+env['CPPPATH']=inc_path
+env['LIBPATH']=lib_path
+env['LIBS']=libs
+env['CCFLAGS']=Split(flags)
+env['LINKFLAGS']=Split(flags)
+
+#tmv_file=tmv_dir+'share/tmv-link'
+tmv_file=tmv_dir+'share/tmv/tmv-link'
+tmv_link = open(tmv_file).read().strip()
+tmv_link_dict =env.ParseFlags(tmv_link)
+env.Append(LIBS=tmv_link_dict['LIBS'])
+env.AppendUnique(LINKFLAGS=tmv_link_dict['LINKFLAGS'])
+env.AppendUnique(LINKFLAGS=tmv_link_dict['CCFLAGS'])
+env.AppendUnique(LIBPATH=tmv_link_dict['LIBPATH'])
+
+# assume important cpp files have first letter capitalized
+cpp_files=glob.glob('*cpp')
+lib_files=[]
+exe_files=[]
+for file in cpp_files:
+    if file[0].isupper():
+        lib_files.append(file)
+    else:
+        exe_files.append(file)
+
+
+lib_files.remove('GaussTest1.cpp')
+lib_files.remove('Great3.cpp')
+exe_files.append('GaussTest1.cpp')
+
+for file in exe_files:
+    name=file.split('.')[0]
+    concat_exp=env.Program(name,[lib_files,file,gbutil_files,
+                                 gbimage_files,sbprofile_files])

@@ -1,0 +1,83 @@
+* Write code for mean shear and expected selection fraction / counts of a (set of) target catalogs.
+
+* Fix fits header float/int typing.
+
+* NOISETIER columns of table as I32 instead of I64
+
+* WT_N is integer in python
+
+* Write test code for isotropy routines in MomentCovariance
+
+* Python code must generate template nda's normalized to area or to sum of 1 for stamps,
+  and give areas or counts for each noise tier.
+
+* Add facility for undetected-source noise somewhere
+
+* Boundary for recenter fsolve in python.
+
+* Check that selection bool is not being used when calculating selection prob.
+
+* Check prepare() use in Priors
+
+* Test routine for PqrCalculations
+
+* Test for PixelGalaxy vs Gaussian moments & derivs
+
+* Caching of quantities in TemplateInfo when covariance is invariant
+
+* Is yflip right for Template - need imag flip in odd moments too.
+
+* Use finite differences for derivatives instead of analytic?
+
+* Better checks on zero centroid moments; returning flags per target
+
+* Parallelize postage stamp measurements
+
+* Parallelize Kd-tree building.
+
+* Bias estimation in the PqrAccumulate
+
+* Need a better RNG to select fairly from large arrays!
+
+* Generate differential random numbers instead of cumulative when subsampling templates
+
+* Gang together integrations over multiple targets to try for better template locality
+
+* Photo-z's / tomography
+
+* Python code producing a lot of negative jacobians (non-maxima?) at low S/N, check centering.
+
+
+DONE
+
+* Add noise tier selection of targets.  Default to tier zero. Input target
+  file format changes to 1 covariance extension per tier.
+
+* Save unique-template count in output file for integration.
+
+* set selection levels by flux or by S/N.
+
+* Isotropize each nominal covariance and how any orientation dependence will affect downstream integrations.
+  (Prior class already checks for nominal's isotropy)
+
+* Save non-detection PQR for noise tier into nominal covariance extension for tableIntegrate.
+  (new code calculateSelection.cpp does this)
+
+* Place effective area for each covariance tier into its extension.
+
+* Move constant-shear estimation into its own program from tableIntegrate.
+
+* Calculate selection bias per noise tier
+
+* Covariance matrix deviance calculation.
+
+* Open inputs as R/W instead of writing new file for tableIntegrate and selection function.
+
+* No longer keep odd covariance in tables, just grab equivalent even moments
+* use TemplateSpecs for comparison/matching
+
+* absence of cov column in target file implies everyone uses the nominal tier cov.
+* get as much of sigmaStep, etc., as possible from input files.
+* No more NLOST etc, just assume there are non-detection entries in targets
+* Code for automatically creating noise tiers in python?
+
