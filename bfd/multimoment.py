@@ -237,6 +237,7 @@ def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None,
     Returns list of KData instances for each input image
     '''
     kdatalist=[]
+    psf_shifts = []
     for ii,img in enumerate(imagelist):
         if pixel_noiselist is None:
             pixel_noise=None
@@ -248,12 +249,15 @@ def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None,
         else:
             band = bandlist[ii]
         
-        kdatalist.append(simpleImage(img, origin,
+        kdata_,psf_shift  = simpleImage(img, origin,
                                      psflist[ii],
                                      wcs = wcslist[ii],
                                      pad_factor = pad_factor,
                                      pixel_noise=pixel_noise,
-                                     band=band,psf_recenter_sigma=psf_recenter_sigma))
+                                     band=band,psf_recenter_sigma=psf_recenter_sigma)
+        
+        kdatalist.append(kdata_)
+        psf_shifts.append(psf_shift)
         
 
-    return kdatalist
+    return kdatalist,psf_shifts

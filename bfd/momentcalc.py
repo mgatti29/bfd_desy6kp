@@ -1259,7 +1259,11 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     phase = kx * dxy[0] + ky * dxy[1]
     kval *=np.exp(1j*phase)
 
-    return KData(kval, kx, ky, d2k, conjugate, kvar,band)
+    if psf_recenter_sigma > 0:
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band),psf_shift
+    else:
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band), None
+        
 
 def simpleImageCross(image1, image2, origin1, origin2, psf1, psf2, pixel_scale=1.0, pad_factor=1, wcs1=None, wcs2=None, band=None):
     '''Create PSF-corrected k-space image and cross-variance array for two image
@@ -1452,8 +1456,6 @@ def simpleImageCross(image1, image2, origin1, origin2, psf1, psf2, pixel_scale=1
     kvar *= pad_factor*pad_factor
     kvar = kvar.real
 
-    
-    return KData(kval1, kx1, ky1, d2k1, conjugate, kvar,band)
 
 
 class WCS(object):

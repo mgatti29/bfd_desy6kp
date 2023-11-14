@@ -31,6 +31,7 @@ class TargetTable(object):
         #Added by Marco
         self.psf_moment = []
         self.psf_hsm_moment = []
+        self.psf_moment_obs = []
         self.orig_row = []
         self.orig_col = []
         self.DESDM_coadd_y = []
@@ -39,10 +40,11 @@ class TargetTable(object):
         self.bkg = []
         self.pixel_used_bkg = []
         self.cov_Mf_per_band = []
-        
-        
-        
-
+        self.meb = []     
+        self.mfrac_per_band = []
+        self.good_exposures = []
+        self.bad_exposures = []
+        self.psf_hsm_moments_obs = []
         self.stampMode = stampMode
 
         # Make an array for areas of non-detections if we need it
