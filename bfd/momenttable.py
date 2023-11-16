@@ -28,10 +28,13 @@ class TargetTable(object):
         self.xy = []
         self.num_exp = []
         
+        
+        
         #Added by Marco
         self.psf_moment = []
         self.psf_hsm_moment = []
         self.psf_moment_obs = []
+        self.cov_psf_obs = []
         self.orig_row = []
         self.orig_col = []
         self.DESDM_coadd_y = []

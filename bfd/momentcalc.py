@@ -1132,8 +1132,8 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     # Find the PSF center, relative to N//2 of its stamp
     psf_shift = np.zeros(2,dtype=float)   # Shift of star center relative to N//2,N//2
     if psf_recenter_sigma > 0:
-        nominal = np.array(psf.shape) // 2
-        psf_shift = xyWin(psf, sigma=psf_recenter_sigma, nominal=nominal)
+        nominal = np.array(psf.shape) // 2 
+        psf_shift =  xyWin(psf, sigma=psf_recenter_sigma, nominal=nominal)
 
     # ??? Do zero padding to some nominal size(s) ?
     N = image.shape[0]
@@ -1237,7 +1237,7 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
         kpsf /= kpsf[0,0]
         if np.any(psf_shift):
             # Adjust PSF phases to center it
-            phase = kx * psf_shift[1] + ky * psf_shift[0]  # ??? coord swap?
+            phase = kx * psf_shift[0] + ky * psf_shift[1]  # ??? coord swap?
             kpsf =  np.exp(1j*phase) * kpsf
         
         # Correct for PSF
