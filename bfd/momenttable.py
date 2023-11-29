@@ -35,6 +35,8 @@ class TargetTable(object):
         self.psf_hsm_moment = []
         self.psf_moment_obs = []
         self.cov_psf_obs = []
+        self.cov_psf_model = []
+        self.cov_psf_shotnoise = []   
         self.orig_row = []
         self.orig_col = []
         self.DESDM_coadd_y = []
