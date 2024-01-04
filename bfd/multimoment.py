@@ -218,7 +218,7 @@ class MultiMomentCalculator(MomentCalculator):
 
 
 #def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1., bandlist=None, pixel_noiselist=None):
-def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None, pixel_noiselist=None,psf_recenter_sigma=0.):
+def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None, pixel_noiselist=None,psf_recenter_sigma=0., eta = 1, shot_noise = False):
     '''Create PSF-corrected k-space images and variance arrays for multiple
     image postage stamps of an object.  
            2nd axis taken as x.
@@ -238,6 +238,7 @@ def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None,
     '''
     kdatalist=[]
     psf_shifts = []
+    shot_noise_cov = []
     for ii,img in enumerate(imagelist):
         if pixel_noiselist is None:
             pixel_noise=None
@@ -249,15 +250,16 @@ def multiImage(imagelist, origin, psflist, wcslist, pad_factor=1.,bandlist=None,
         else:
             band = bandlist[ii]
         
-        kdata_,psf_shift  = simpleImage(img, origin,
+        kdata_,psf_shift,shot_noise_cov_i  = simpleImage(img, origin,
                                      psflist[ii],
                                      wcs = wcslist[ii],
                                      pad_factor = pad_factor,
                                      pixel_noise=pixel_noise,
-                                     band=band,psf_recenter_sigma=psf_recenter_sigma)
+                                     band=band,psf_recenter_sigma=psf_recenter_sigma, eta = eta, shot_noise = shot_noise)
         
         kdatalist.append(kdata_)
         psf_shifts.append(psf_shift)
+        shot_noise_cov.append(shot_noise_cov_i)
         
 
     return kdatalist,psf_shifts

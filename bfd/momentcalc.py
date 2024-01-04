@@ -621,7 +621,7 @@ class KData(object):
         kvar = variance of each kval sample.  More precisely, Cov(kval, conj(kval)). Only
                needed if covariance matrix will be wanted.
     '''
-    def __init__(self, kval, kx, ky, d2k, conjugate, kvar=None, band=None):
+    def __init__(self, kval, kx, ky, d2k, conjugate, kvar=None, band=None, kpsf = None):
         '''Initializer makes internal names refer to same data as the arguments,
         so user is responsible that these arrays are not altered.
         '''
@@ -632,6 +632,7 @@ class KData(object):
         self.conjugate = conjugate
         self.kvar = kvar
         self.band = band
+        self.kpsf = kpsf
         return
     
 class MomentCalculator(object):
@@ -736,6 +737,50 @@ class MomentCalculator(object):
                        self._wt_f_odd[:,np.newaxis,:] * \
                        self._kvar, axis=2)
         return even, odd
+    
+    
+    def get_shotnoise(self,xVar,eta=1.,dx=0.,dy=0.):
+    
+        self._set_wt_f()
+
+        N = xVar.shape[0]
+
+        # Make empty weight array
+        wt_f_even = np.zeros((5,*self._kpsf.shape))
+
+        # Reshape masked weight functions
+        wt_f_even[:,self.weight.mask] = self._wt_f_even
+
+        # Divide weight by transform of the PSF
+        kw_psf = wt_f_even/self._kpsf
+
+        if dx!=0. or dy!=0.:
+            # Shift to galaxy center
+            kx = np.zeros((*self._kpsf.shape,))
+            ky = np.zeros((*self._kpsf.shape,))
+            
+            kx[self.weight.mask] = self._kx
+            ky[self.weight.mask] = self._ky
+            
+            phase = kx * dx + ky * dy
+            kw_psf = np.exp(1j*phase) * kw_psf
+
+        # Transform back
+        xw_psf = np.fft.irfft2(kw_psf)
+        
+        NNew = xw_psf.shape[1]
+        
+        xVarNew = np.zeros_like(xw_psf[0])
+        
+        xVarNew[(NNew-N)//2:-(NNew-N)//2,(NNew-N)//2:-(NNew-N)//2] = xVar
+
+        # Calculate shot noise covariance
+        even = NNew**4*self._d2k**2 / eta \
+            * np.sum(xw_psf[:,np.newaxis,:,:] * xw_psf[np.newaxis,:,:,:] * xVarNew, axis=(2,3))
+
+        return even
+
+    
 
     def get_template(self,dx,dy):
         '''Return Template object (moments and their derivatives) 
@@ -987,6 +1032,7 @@ class MomentCalculator(object):
         return dx, badcentering, msg
 
     def make_templates(self, sigma_xy, sigma_flux=1., sn_min=0., sigma_max=6.5, sigma_step=1., xy_max=2.,
+                           max_xystep_ratio=3.,
                            **kwargs):
         ''' Return a list of Template instances that move the object on a grid of
         coordinate origins that keep chisq contribution of flux and center below
@@ -997,20 +1043,45 @@ class MomentCalculator(object):
         sigma_max   Maximum number of std deviations away from target that template will be used
         sigma_step  Max spacing between shifted templates, in units of measurement sigmas
         xy_max      Max allowed centroid shift, in sky units (prevents runaways)
+        max_xystep_ratio  Maximum allowed ratio between derived step sizes for xy sampling in
+                    the two eigenvector directions.  Default value should be good, use zero if you 
+                    want to disable this adjustment.
+
+        Returns:
+        success:    Boolean that is true if a set of templates was made successfully, False on error.
+                    If `success==False`, then the 2nd argument will be an error string.
+        tlist:      A list of N templates made (possibly empty - this is not an error)
+        xy_kept:    An Nx2 array of the (x,y) center displacements for each of the templates created.
+        xy_integral: The summed probability of all translated copies being detected.  For single-peaked 
+                    templates that have peak flux well above threshold, this should be very close to unity.
         '''
         xyshift, error, msg = self.recenter()
+        
         if error:
-            return None, "Center wandered too far from starting guess or failed to converge"
+            return False, "Center wandered too far from starting guess or failed to converge", None, None
         # Determine derivatives of 1st moments on 2 principal axes,
         # and steps will be taken along these grid axes.
         jacobian0 = self.xy_jacobian(np.zeros(2))
         eval, evec = np.linalg.eigh(jacobian0)
         if np.any(eval>=0.):
-            return None, "Template galaxy center is not at a flux maximum"
+            return False, "Template galaxy center is not at a flux maximum", None, None
 
         detj0 = np.linalg.det(jacobian0) # Determinant of Jacobian
         xy_step = np.abs(sigma_step * sigma_xy / eval)
+
+        # Insure that step size is not too much larger in one direction
+        if max_xystep_ratio > 1.: 
+            ratio = xy_step[1] / xy_step[0]
+            if ratio > max_xystep_ratio:
+                xy_step[1] = xy_step[0] * max_xystep_ratio
+            elif ratio < 1/max_xystep_ratio:
+                xy_step[0] = xy_step[1] * max_xystep_ratio
         da = xy_step[0] * xy_step[1]
+
+        # Accumulate list of center locations and the integral
+        # of the Gaussian for centroid
+        xy_kept = []
+        area_integral = 0.
 
         # Offset the xy grid by random phase in the grid
         xy_offset = np.random.random(2) - 0.5
@@ -1040,9 +1111,10 @@ class MomentCalculator(object):
 
             # Accumulate chisq that this template would have for a target
             # First: any target will have zero MX, MY
-            chisq = (m.odd[m.MX]**2 + m.odd[m.MY]**2) / sigma_xy**2
+            chisq_xy = (m.odd[m.MX]**2 + m.odd[m.MY]**2) / sigma_xy**2
+            chisq = 1 * chisq_xy
             # Second: there is suppression by jacobian of determinant
-            chisq += -2. * np.log(detj/detj0)
+            ### ??? chisq = chisq_xy - 2.* np.log(detj/detj0)
             # Third: target flux will never be below flux_min
             if (e[m.M0] < flux_min):
                 chisq += ((flux_min -e[m.M0])/sigma_flux)**2
@@ -1052,6 +1124,7 @@ class MomentCalculator(object):
                 tmpl.nda = tmpl.nda * da
                 tmpl.jSuppression = detj / detj0
                 result.append(tmpl)
+
                 # Try all neighboring grid points not yet tried
                 for mn_new in ( (mn[0]+1,mn[1]),
                                 (mn[0]-1,mn[1]),
@@ -1059,10 +1132,15 @@ class MomentCalculator(object):
                                 (mn[0],mn[1]-1)):
                     if mn_new not in grid_done:
                         grid_try.add(mn_new)
-        if len(result)==0:
-            result.append(None)
-            result.append("no templates made")
-        return result
+                # Augment running integral
+                xy_kept.append(xy)
+                area_integral += da * detj * np.exp(-0.5*chisq_xy)
+
+        # Add stuff to output
+        area_integral /= 2 * np.pi * sigma_xy**2
+        xy_kept = np.array(xy_kept)
+        return True, result, xy_kept, area_integral
+
             
         
 
@@ -1107,7 +1185,7 @@ def xyWin(psf, sigma, nominal=None, nIter=3):
 
 def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
                 pixel_noise=None, wcs=None,band=None,
-                psf_recenter_sigma=0.,weightSigma=0.65):
+                psf_recenter_sigma=0.,weightSigma=0.65, eta = 1., shot_noise = False,save_kpsf = False):
     '''Create PSF-corrected k-space image and variance array
     image  postage stamp to use, 2d numpy array, in units of FLUX PER PIXEL.
            2nd axis taken as x.
@@ -1185,6 +1263,29 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     # K area per sample
     d2k = (kx[0,1] - kx[0,0])**2
     
+    
+    
+    # Process and correct for the PSF
+    kpsf_out = None
+    if psf is not None:
+        kpsf  =  np.fft.rfft2(psf)
+        
+        
+        #kpsf = np.vstack([kpsf[:kxmax,:kymax],kpsf[-kxmax:,:kymax]]) # cropping kpsf
+        if save_kpsf:
+            kpsf_out = kpsf.copy()
+        
+        kpsf[1::2,::2] *= -1.
+        kpsf[::2,1::2] *=-1.
+        # Normalize PSF to unit flux (note DC is at [0,0])
+
+    
+        kpsf /= kpsf[0,0]    
+        if np.any(psf_shift):
+            # Adjust PSF phases to center it
+            phase =    (kx * (psf_shift[1]) + ky * (psf_shift[0]))  
+            kpsf =  np.exp(1j*phase) * kpsf
+
     # Adjust kx, ky, d2k for coordinate mapping
     # and calculate (sky coordinate) displacement of
     # galaxy origin from FFT phase center
@@ -1209,40 +1310,26 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     
     kmax = 1.07635*np.pi/weightSigma # wt(kr) >= kmax is 0
         
-    kymax = np.max([np.argmin(np.abs(ky[:N//2,0]-kmax))+1,
-                   np.argmin(np.abs(ky[:N//2,0]+kmax))+1]) # index of maximum considered ky (+ 1 to avoid rounding issues)
-    kxmax = np.max([np.argmin(np.abs(kx[0,:N//2]-kmax))+1,
-                   np.argmin(np.abs(kx[0,:N//2]+kmax))+1]) # index of maximum considered kx (+ 1 to avoid rounding issues)
-    
-    kx = np.vstack([kx[:kxmax,:kxmax],kx[-kxmax:,:kxmax]]) # cropping kx
-    ky = np.vstack([ky[:kymax,:kymax],ky[-kymax:,:kymax]]) # cropping ky
-        
+    #kymax = np.max([np.argmin(np.abs(ky[:N//2,0]-kmax))+1,
+    #               np.argmin(np.abs(ky[:N//2,0]+kmax))+1]) # index of maximum considered ky (+ 1 to avoid rounding issues)
+    #kxmax = np.max([np.argmin(np.abs(kx[0,:N//2]-kmax))+1,
+    #               np.argmin(np.abs(kx[0,:N//2]+kmax))+1]) # index of maximum considered kx (+ 1 to avoid rounding issues)
+    #
+    #kx = np.vstack([kx[:kxmax,:kxmax],kx[-kxmax:,:kxmax]]) # cropping kx
+   # ky = np.vstack([ky[:kymax,:kymax],ky[-kymax:,:kymax]]) # cropping ky
+   #     
     kval =  np.fft.rfft2(image)
     
-    kval = np.vstack([kval[:kxmax,:kymax],kval[-kxmax:,:kymax]]) # cropping kval
+   # kval = np.vstack([kval[:kxmax,:kymax],kval[-kxmax:,:kymax]]) # cropping kval
     
     # Flip signs to shift coord origin from [0,0] to N/2,N/2
     kval[1::2,::2] *= -1.
     kval[::2,1::2] *=-1.
-
-    # Process and correct for the PSF
-    if psf is not None:
-        kpsf  =  np.fft.rfft2(psf)
         
-        kpsf = np.vstack([kpsf[:kxmax,:kymax],kpsf[-kxmax:,:kymax]]) # cropping kpsf
-        
-        kpsf[1::2,::2] *= -1.
-        kpsf[::2,1::2] *=-1.
-        # Normalize PSF to unit flux (note DC is at [0,0])
-        kpsf /= kpsf[0,0]
-        if np.any(psf_shift):
-            # Adjust PSF phases to center it
-            phase = kx * psf_shift[0] + ky * psf_shift[1]  # ??? coord swap?
-            kpsf =  np.exp(1j*phase) * kpsf
-        
-        # Correct for PSF
-        kval /= kpsf
+    # Correct for PSF
+    kval /= kpsf
     
+
     
     # Double the weight on samples whose conjugates are missing
     conjugate = np.zeros_like(kval, dtype=bool)
@@ -1258,14 +1345,22 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     # Apply phase shift to move center
     phase = kx * dxy[0] + ky * dxy[1]
     kval *=np.exp(1j*phase)
-
-    if psf_recenter_sigma > 0:
-        return KData(kval, kx, ky, d2k, conjugate, kvar,band),psf_shift
+    
+    # compute shot noise ------------------------------
+    if shot_noise:
+        cov_shot_noise = self.get_shotnoise(image,eta=eta,dx=-dxy[0],dy=-dxy[1])
     else:
-        return KData(kval, kx, ky, d2k, conjugate, kvar,band), None
+        cov_shot_noise = None
         
 
-def simpleImageCross(image1, image2, origin1, origin2, psf1, psf2, pixel_scale=1.0, pad_factor=1, wcs1=None, wcs2=None, band=None):
+
+    if psf_recenter_sigma > 0:
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out),psf_shift, cov_shot_noise
+    else:
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out), None, cov_shot_noise
+        
+
+def simpleImageCross(image1, image2, origin1, origin2, psf1, psf2, pixel_scale=1.0, pad_factor=1, wcs1=None, wcs2=None, band=None,save_kpsf=False):
     '''Create PSF-corrected k-space image and cross-variance array for two image
     image1 & image2  postage stamps to use, 2d numpy array, in units of FLUX PER PIXEL.
                      2nd axis taken as x.

@@ -6,7 +6,7 @@ from astropy import version
 import astropy.io.fits as fits
 from . import momentcalc
 from .keywords import *
-
+import frogress
 
 class TargetTable(object):
     '''Class to save a list of target galaxies to FITS binary table
@@ -50,6 +50,7 @@ class TargetTable(object):
         self.good_exposures = []
         self.bad_exposures = []
         self.psf_hsm_moments_obs = []
+        self.weighted_efficiency = []
         self.stampMode = stampMode
 
         # Make an array for areas of non-detections if we need it
@@ -213,9 +214,13 @@ class TargetTable(object):
 class TemplateTable(object):
     '''Class to save a list of template galaxies to FITS binary table
     '''
-    def __init__(self, n, sigma, sn_min, sigma_xy, sigma_flux, sigma_step, sigma_max,**kwargs):
+    def __init__(self, n, sigma, sn_min, sigma_xy, sigma_flux, sigma_step, sigma_max, tier_number, **kwargs):
         # Save configuration info in a FITS header
         self.hdr = fits.Header()
+        try:
+            self.hdr['TIER_NUM'] = np.int32(tier_number)
+        except:
+            pass
         self.hdr[hdrkeys['weightN']] = n
         self.hdr[hdrkeys['weightSigma']]= sigma
         self.hdr[hdrkeys['fluxMin']]= sn_min * sigma_flux
@@ -246,7 +251,8 @@ class TemplateTable(object):
         nda = []
         jSuppression = []
 
-        for tmpl in self.templates:
+        for i in frogress.bar(range(len(self.templates))):
+            tmpl = self.templates[i]
             # obtain moments and derivs
             m0 = tmpl.get_moment()
             m1_dg1 = tmpl.get_dg1()
