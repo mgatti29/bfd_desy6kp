@@ -31,6 +31,7 @@ class TargetTable(object):
         
         
         #Added by Marco
+        self.cov_shot_noise = []
         self.psf_moment = []
         self.psf_hsm_moment = []
         self.psf_moment_obs = []

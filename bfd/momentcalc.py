@@ -658,6 +658,9 @@ class MomentCalculator(object):
         self._kval = (kdata.kval * np.where(kdata.conjugate, 2., 1.))[self.weight.mask] * kdata.d2k
         self._kx = kdata.kx[self.weight.mask]
         self._ky = kdata.ky[self.weight.mask]
+        
+        self._d2k = kdata.d2k
+        self._kpsf = kdata.kpsf
         if kdata.kvar is None:
             self._kvar = None
         else:
@@ -1185,7 +1188,7 @@ def xyWin(psf, sigma, nominal=None, nIter=3):
 
 def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
                 pixel_noise=None, wcs=None,band=None,
-                psf_recenter_sigma=0.,weightSigma=0.65, eta = 1., shot_noise = False,save_kpsf = False):
+                psf_recenter_sigma=0.,weightSigma=0.65, save_kpsf = True):
     '''Create PSF-corrected k-space image and variance array
     image  postage stamp to use, 2d numpy array, in units of FLUX PER PIXEL.
            2nd axis taken as x.
@@ -1272,8 +1275,7 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
         
         
         #kpsf = np.vstack([kpsf[:kxmax,:kymax],kpsf[-kxmax:,:kymax]]) # cropping kpsf
-        if save_kpsf:
-            kpsf_out = kpsf.copy()
+
         
         kpsf[1::2,::2] *= -1.
         kpsf[::2,1::2] *=-1.
@@ -1286,6 +1288,8 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
             phase =    (kx * (psf_shift[1]) + ky * (psf_shift[0]))  
             kpsf =  np.exp(1j*phase) * kpsf
 
+        if save_kpsf:
+            kpsf_out = kpsf.copy()
     # Adjust kx, ky, d2k for coordinate mapping
     # and calculate (sky coordinate) displacement of
     # galaxy origin from FFT phase center
@@ -1347,17 +1351,15 @@ def simpleImage(image, origin, psf, pixel_scale=1.0, pad_factor=1,
     kval *=np.exp(1j*phase)
     
     # compute shot noise ------------------------------
-    if shot_noise:
-        cov_shot_noise = self.get_shotnoise(image,eta=eta,dx=-dxy[0],dy=-dxy[1])
-    else:
-        cov_shot_noise = None
-        
+    
 
+    
 
-    if psf_recenter_sigma > 0:
-        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out),psf_shift, cov_shot_noise
+    if psf_recenter_sigma > 0:        
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out),psf_shift
     else:
-        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out), None, cov_shot_noise
+
+        return KData(kval, kx, ky, d2k, conjugate, kvar,band,kpsf_out), None
         
 
 def simpleImageCross(image1, image2, origin1, origin2, psf1, psf2, pixel_scale=1.0, pad_factor=1, wcs1=None, wcs2=None, band=None,save_kpsf=False):
