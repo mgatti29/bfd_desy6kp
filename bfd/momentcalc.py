@@ -754,6 +754,8 @@ class MomentCalculator(object):
         # Reshape masked weight functions
         wt_f_even[:,self.weight.mask] = self._wt_f_even
 
+        self._kpsf[1::2,::2] *= -1.
+        self._kpsf[::2,1::2] *= -1.
         # Divide weight by transform of the PSF
         kw_psf = wt_f_even/self._kpsf
 
